@@ -530,6 +530,28 @@ body.dark .attribute-value-input {
     transform: scale(1.1);
 }
 
+/* Match the style of .remove-attribute-btn for .remove-parent-btn */
+.remove-parent-btn {
+    width: 24px;
+    height: 24px;
+    background: #dc3545;
+    border: none;
+    border-radius: 50%;
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: bold;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+.remove-parent-btn:hover {
+    background: #c82333;
+    transform: scale(1.1);
+}
+
 /* Save Button */
 .save-node-btn {
     width: 100%;

@@ -5,6 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>System Mapping Tool - Wireframe</title>
     <link rel="stylesheet" href="system_mapping.css">
+    <style>
+        .parent-node-select-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+    </style>
 </head>
 <body>
     <!-- Top Bar -->
@@ -65,13 +72,18 @@
                     <!-- Parent Node Select -->
                     <div class="config-field">
                         <label class="config-label">Parent Node</label>
-                        <div id="parentNodeContainer">
-                            <select class="config-select parent-node-select">
-                                <option value="">Select parent node</option>
-                                <!-- Dynamically populated -->
-                            </select>
+                        <div class="parent-node-row">
+                            <div id="parentNodeContainer">
+                                <div class="parent-node-select-row">
+                                    <select class="config-select parent-node-select">
+                                        <option value="">Select parent node</option>
+                                        <!-- Dynamically populated -->
+                                    </select>
+                                </div>
+                                <!-- Additional parent selects will be added here dynamically -->
+                            </div>
+                            <button class="add-parent-btn add-attribute-btn" type="button" onclick="addParentNodeSelect()">+</button>
                         </div>
-                        <button class="add-parent-btn add-attribute-btn" type="button" onclick="addParentNodeSelect()">+</button>
                     </div>
 
                     <!-- Custom Attributes Section -->
@@ -341,8 +353,49 @@
             // Clone the first select
             const newSelect = selects[0].cloneNode(true);
             newSelect.selectedIndex = 0;
-            container.appendChild(newSelect);
+
+            // Wrap in a row div
+            const rowDiv = document.createElement('div');
+            rowDiv.className = 'parent-node-select-row';
+            rowDiv.appendChild(newSelect);
+
+            // Add remove button
+            const removeBtn = document.createElement('button');
+            removeBtn.type = 'button';
+            removeBtn.className = 'remove-parent-btn';
+            removeBtn.textContent = '−';
+            removeBtn.onclick = function() {
+                rowDiv.remove();
+            };
+            rowDiv.appendChild(removeBtn);
+
+            container.appendChild(rowDiv);
+
+            updateRemoveParentButtons();
         }
+
+        // Ensure only additional selects have remove buttons
+        function updateRemoveParentButtons() {
+            const container = document.getElementById('parentNodeContainer');
+            const rows = container.querySelectorAll('.parent-node-select-row');
+            rows.forEach((row, idx) => {
+                const btn = row.querySelector('.remove-parent-btn');
+                if (btn) btn.style.display = idx === 0 ? 'none' : '';
+            });
+        }
+
+        // On page load, wrap the initial select in a row div
+        document.addEventListener('DOMContentLoaded', () => {
+            const container = document.getElementById('parentNodeContainer');
+            const firstSelect = container.querySelector('.parent-node-select');
+            if (firstSelect && !firstSelect.parentElement.classList.contains('parent-node-select-row')) {
+                const rowDiv = document.createElement('div');
+                rowDiv.className = 'parent-node-select-row';
+                rowDiv.appendChild(firstSelect);
+                container.appendChild(rowDiv);
+            }
+            updateRemoveParentButtons();
+        });
     </script>
 </body>
 </html>
