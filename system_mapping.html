@@ -42,18 +42,18 @@
             
             <div class="panel-content">
                 <div class="tool-section">
-                    <h3>Add Elements</h3>
+                    <h3>Add Nodes</h3>
                     <div class="tool-item" onclick="selectTool('node')">
                         <div class="tool-icon"></div>
                         <div class="tool-text">Node</div>
                     </div>
-                    <div class="tool-item" onclick="selectTool('connection')">
+                    <div class="tool-item" onclick="selectTool('edit')">
                         <div class="tool-icon"></div>
-                        <div class="tool-text">Connection</div>
+                        <div class="tool-text">Edit Node</div>
                     </div>
                 </div>
 
-                <!-- Node Configuration Section -->
+                <!-- Add Node Configuration Section -->
                 <div class="node-config" id="nodeConfig">
                     <div class="config-field">
                         <label class="config-label">Name</label>
@@ -99,6 +99,22 @@
 
                     <!-- Save Button -->
                     <button class="save-node-btn" onclick="saveNode()">Save Node</button>
+                </div>
+
+                <!-- Edit Node Configuration Section -->
+                <div class="edit-node-config" id="editNodeConfig">
+                    <div class="config-field">
+                        <label class="config-label">Select Node</label>
+                        <select class="config-select" id="editNodeSelect" onchange="populateEditNodeAttributes()">
+                            <option value="">Select node</option>
+                            <!-- Dynamically populated -->
+                        </select>
+                    </div>
+                    <div id="editAttributesList">
+                        <!-- Editable attributes will appear here -->
+                    </div>
+                    <button class="add-attribute-btn" onclick="addEditAttribute()">+</button>
+                    <button class="save-node-btn" onclick="saveEditedNode()">Save Changes</button>
                 </div>
             </div>
         </div>
@@ -213,6 +229,67 @@
                         select.appendChild(option);
                     });
                 });
+
+                // Populate the edit node dropdown on page load
+                document.addEventListener('DOMContentLoaded', () => {
+                    const editNodeSelect = document.getElementById('editNodeSelect');
+                    if (editNodeSelect) {
+                        import('./topology.js').then(module => {
+                            const nodes = module.data.nodes;
+                            nodes.forEach(node => {
+                                const option = document.createElement('option');
+                                option.value = node.id;
+                                option.textContent = node.id;
+                                editNodeSelect.appendChild(option);
+                            });
+                        });
+                    }
+                });
+
+                // Populate attributes for editing
+                function populateEditNodeAttributes() {
+                    const editNodeSelect = document.getElementById('editNodeSelect');
+                    const editAttributesList = document.getElementById('editAttributesList');
+                    editAttributesList.innerHTML = '';
+                    const selectedId = editNodeSelect.value;
+                    if (!selectedId) return;
+
+                    import('./topology.js').then(module => {
+                        const node = module.data.nodes.find(n => n.id === selectedId);
+                        if (!node) return;
+                        (node.attributes || []).forEach(attr => {
+                            addEditAttribute(attr.name, attr.value);
+                        });
+                    });
+                }
+                window.populateEditNodeAttributes = populateEditNodeAttributes;
+
+                // Save edited node attributes
+                function saveEditedNode() {
+                    const editNodeSelect = document.getElementById('editNodeSelect');
+                    const selectedId = editNodeSelect.value;
+                    if (!selectedId) return;
+
+                    import('./topology.js').then(module => {
+                        const node = module.data.nodes.find(n => n.id === selectedId);
+                        if (!node) return;
+                        const editAttributesList = document.getElementById('editAttributesList');
+                        const newAttributes = [];
+                        editAttributesList.querySelectorAll('.attribute-item').forEach(item => {
+                            const nameInput = item.querySelector('.attribute-name-input');
+                            const valueInput = item.querySelector('.attribute-value-input');
+                            if (nameInput.value && valueInput.value) {
+                                newAttributes.push({
+                                    name: nameInput.value,
+                                    value: valueInput.value
+                                });
+                            }
+                        });
+                        node.attributes = newAttributes;
+                        alert('Node attributes updated (in memory)');
+                    });
+                }
+                window.saveEditedNode = saveEditedNode;
             </script>
             <div class="canvas-grid"></div>
 
@@ -243,26 +320,27 @@
             });
 
             const nodeConfig = document.getElementById('nodeConfig');
-            const nodeTool = document.querySelector('.tool-item .tool-text').textContent === 'Node'
-                ? document.querySelector('.tool-item')
-                : null;
+            const editNodeConfig = document.getElementById('editNodeConfig');
 
-            // If Node tool is selected and already active, deselect and hide panel
-            if (tool === 'node' && nodeConfig.classList.contains('active')) {
+            // Toggle panels based on tool
+            if (tool === 'node') {
+                if (nodeConfig.classList.contains('active')) {
+                    nodeConfig.classList.remove('active');
+                    return;
+                }
+                nodeConfig.classList.add('active');
+                editNodeConfig.classList.remove('active');
+            } else if (tool === 'edit') {
+                if (editNodeConfig.classList.contains('active')) {
+                    editNodeConfig.classList.remove('active');
+                    return;
+                }
+                editNodeConfig.classList.add('active');
                 nodeConfig.classList.remove('active');
-                return;
             }
-
-            // Add active state to clicked item
+            // Highlight the clicked tool
             event.target.closest('.tool-item').style.background = document.body.classList.contains('dark') ? '#333' : '#e3f2fd';
             event.target.closest('.tool-item').style.borderColor = document.body.classList.contains('dark') ? '#667eea' : '#667eea';
-
-            // Show/hide node configuration based on selection
-            if (tool === 'node') {
-                nodeConfig.classList.add('active');
-            } else {
-                nodeConfig.classList.remove('active');
-            }
         }
 
         function addAttribute() {

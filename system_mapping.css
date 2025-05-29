@@ -308,6 +308,14 @@ body.dark .node-config {
     display: block;
 }
 
+.edit-node-config {
+    display: none;
+}
+
+.edit-node-config.active {
+    display: block;
+}
+
 .config-field {
     margin-bottom: 16px;
 }
