@@ -57,3 +57,24 @@ export const data = {
     { source: "LXC 104 - NGINX Proxy Manager", target: "n8n.dataandstories.com" }
   ]
 };
+
+/**
+ * Adds a new node and (optionally) a link to its parent in the topology data.
+ * @param {Object} nodeData - { id, group, parentNode, attributes }
+ */
+export function addNode(nodeData) {
+  // Add the node to the nodes array
+  data.nodes.push({
+    id: nodeData.id,
+    group: nodeData.group,
+    attributes: nodeData.attributes || []
+  });
+
+  // If a parentNode is specified, add a link from parent to this node
+  if (nodeData.parentNode) {
+    data.links.push({
+      source: nodeData.parentNode,
+      target: nodeData.id
+    });
+  }
+}
