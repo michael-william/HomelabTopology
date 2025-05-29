@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Mapping Tool - Wireframe</title>
+    <link rel="stylesheet" href="system_mapping_wireframe.css">
+</head>
+<body>
+    <!-- Top Bar -->
+    <div class="top-bar">
+        <div class="logo-section">
+            <div class="logo">S</div>
+            <div class="project-name">System Map</div>
+        </div>
+        
+        <div class="top-actions">
+            <button class="action-btn">Export</button>
+            <button class="action-btn">Share</button>
+            <button class="action-btn">Save</button>
+            <button class="theme-toggle" onclick="toggleTheme()">🌙</button>
+        </div>
+    </div>
+
+    <!-- Main Layout -->
+    <div class="main-layout">
+        <!-- Side Panel -->
+        <div class="side-panel" id="sidePanel">
+            <button class="expand-btn" onclick="togglePanel()">›</button>
+            
+            <div class="panel-header">
+                <div class="panel-title">Tools</div>
+                <button class="collapse-btn" onclick="togglePanel()">‹</button>
+            </div>
+            
+            <div class="panel-content">
+                <div class="tool-section">
+                    <h3>Add Elements</h3>
+                    <div class="tool-item" onclick="selectTool('node')">
+                        <div class="tool-icon"></div>
+                        <div class="tool-text">Node</div>
+                    </div>
+                    <div class="tool-item" onclick="selectTool('connection')">
+                        <div class="tool-icon"></div>
+                        <div class="tool-text">Connection</div>
+                    </div>
+                </div>
+
+                <!-- Node Configuration Section -->
+                <div class="node-config" id="nodeConfig">
+                    <div class="config-field">
+                        <label class="config-label">Name</label>
+                        <input type="text" class="config-input" placeholder="Enter node name">
+                    </div>
+                    
+                    <div class="config-field">
+                        <label class="config-label">Type</label>
+                        <select class="config-select">
+                            <option value="">Select type</option>
+                            <option value="hardware">Hardware</option>
+                            <option value="service">Service</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Parent Node Select -->
+                    <div class="config-field">
+                        <label class="config-label">Parent Node</label>
+                        <select class="config-select" id="parentNodeSelect">
+                            <option value="">Select parent node</option>
+                            <!-- Dynamically populated -->
+                        </select>
+                    </div>
+
+                    <!-- Custom Attributes Section -->
+                    <div class="custom-attributes">
+                        <div class="attributes-header">
+                            <span class="attributes-title">Custom Attributes</span>
+                            <button class="add-attribute-btn" onclick="addAttribute()">+</button>
+                        </div>
+                        <div id="attributesList">
+                            <!-- Dynamic attributes will be added here -->
+                        </div>
+                    </div>
+
+                    <!-- Save Button -->
+                    <button class="save-node-btn" onclick="saveNode()">Save Node</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Canvas Area -->
+        <div class="canvas-area">
+            
+            <!-- D3 Graph Visualization -->
+            <div id="graph" class="d3-graph"></div>
+            <svg></svg>
+            <div class="tooltip" style="opacity:0"></div>
+            <script src="https://d3js.org/d3.v7.min.js"></script>
+            <script type="module">
+                import { data } from './topology.js';
+            
+                const width = window.innerWidth;
+                const height = window.innerHeight;
+            
+                const colorScale = d3.scaleOrdinal(d3.schemeCategory10);
+                const tooltip = d3.select(".tooltip");
+            
+                const svg = d3.select("svg")
+                .attr("viewBox", [0, 0, width, height]);
+            
+                const LXC = svg.append("g");
+            
+                svg.call(d3.zoom().on("zoom", ({transform}) => {
+                LXC.attr("transform", transform);
+                }));
+            
+                const simulation = d3.forceSimulation(data.nodes)
+                .force("link", d3.forceLink(data.links).id(d => d.id).distance(120))
+                .force("charge", d3.forceManyBody().strength(-400))
+                .force("center", d3.forceCenter(width / 2, height / 2));
+            
+                const link = LXC.append("g")
+                .attr("stroke", "#aaa")
+                .attr("stroke-opacity", 0.6)
+                .selectAll("line")
+                .data(data.links)
+                .join("line")
+                .attr("stroke-width", 1.5);
+            
+                const node = LXC.append("g")
+                .attr("stroke", "#fff")
+                .attr("stroke-width", 1.5)
+                .selectAll("circle")
+                .data(data.nodes)
+                .join("circle")
+                .attr("r", 10)
+                .attr("fill", d => colorScale(d.group))
+                .call(drag(simulation))
+                .on("mouseover", (event, d) => {
+                    tooltip.transition().duration(200).style("opacity", 1);
+                    tooltip.html(`<strong>${d.id}</strong><br/>Group: ${d.group}`)
+                    .style("left", (event.pageX + 10) + "px")
+                    .style("top", (event.pageY + 10) + "px");
+                })
+                .on("mouseout", () => {
+                    tooltip.transition().duration(200).style("opacity", 0);
+                });
+            
+                const label = LXC.append("g")
+                .selectAll("text")
+                .data(data.nodes)
+                .join("text")
+                .text(d => d.id)
+                .attr("x", 12)
+                .attr("y", "0.31em")
+                .attr("fill", "#ccc")
+                .style("font-size", "0.75rem");
+            
+                simulation.on("tick", () => {
+                link.attr("x1", d => d.source.x)
+                    .attr("y1", d => d.source.y)
+                    .attr("x2", d => d.target.x)
+                    .attr("y2", d => d.target.y);
+            
+                node.attr("cx", d => d.x)
+                    .attr("cy", d => d.y);
+            
+                label.attr("x", d => d.x + 12)
+                    .attr("y", d => d.y);
+                });
+            
+                function drag(simulation) {
+                function dragstarted(event, d) {
+                    if (!event.active) simulation.alphaTarget(0.3).restart();
+                    d.fx = d.x;
+                    d.fy = d.y;
+                }
+                function dragged(event, d) {
+                    d.fx = event.x;
+                    d.fy = event.y;
+                }
+                function dragended(event, d) {
+                    if (!event.active) simulation.alphaTarget(0);
+                    d.fx = null;
+                    d.fy = null;
+                }
+                return d3.drag().on("start", dragstarted).on("drag", dragged).on("end", dragended);
+                }
+
+                // Populate parent node select options
+                const parentNodeSelect = document.getElementById('parentNodeSelect');
+                if (parentNodeSelect && data.nodes) {
+                    parentNodeSelect.innerHTML = '<option value="">Select parent node</option>';
+                    data.nodes.forEach(node => {
+                        const option = document.createElement('option');
+                        option.value = node.id;
+                        option.textContent = node.id;
+                        parentNodeSelect.appendChild(option);
+                    });
+                }
+            </script>
+            <div class="canvas-grid"></div>
+
+            <!-- Canvas Controls -->
+            <!-- <div class="canvas-controls">
+                <button class="control-btn">+</button>
+                <button class="control-btn">-</button>
+                <button class="control-btn">⌂</button>
+                <button class="control-btn">⟲</button>
+            </div> -->
+        </div>
+    </div>
+
+    <script>
+        function togglePanel() {
+            const panel = document.getElementById('sidePanel');
+            const collapseBtn = panel.querySelector('.collapse-btn');
+            
+            panel.classList.toggle('collapsed');
+            collapseBtn.innerHTML = panel.classList.contains('collapsed') ? '‹' : '‹';
+        }
+
+        function selectTool(tool) {
+            // Remove active state from all items
+            document.querySelectorAll('.tool-item').forEach(i => {
+                i.style.background = '';
+                i.style.borderColor = '';
+            });
+            
+            // Add active state to clicked item
+            event.target.closest('.tool-item').style.background = document.body.classList.contains('dark') ? '#333' : '#e3f2fd';
+            event.target.closest('.tool-item').style.borderColor = document.body.classList.contains('dark') ? '#667eea' : '#667eea';
+            
+            // Show/hide node configuration based on selection
+            const nodeConfig = document.getElementById('nodeConfig');
+            if (tool === 'node') {
+                nodeConfig.classList.add('active');
+            } else {
+                nodeConfig.classList.remove('active');
+            }
+        }
+
+        function addAttribute() {
+            const attributesList = document.getElementById('attributesList');
+            const attributeId = 'attr_' + Date.now();
+            
+            const attributeDiv = document.createElement('div');
+            attributeDiv.className = 'attribute-item';
+            attributeDiv.id = attributeId;
+            
+            attributeDiv.innerHTML = `
+                <div class="attribute-name-row">
+                    <input type="text" class="attribute-name-input" placeholder="Attribute name" />
+                    <button class="remove-attribute-btn" onclick="removeAttribute('${attributeId}')">−</button>
+                </div>
+                <textarea class="attribute-value-input" placeholder="Enter attribute value (can be multiple lines)"></textarea>
+            `;
+            
+            attributesList.appendChild(attributeDiv);
+        }
+
+        function removeAttribute(attributeId) {
+            const attributeElement = document.getElementById(attributeId);
+            if (attributeElement) {
+                attributeElement.remove();
+            }
+        }
+
+        function saveNode() {
+            // Collect form data
+            const nodeData = {
+                name: document.querySelector('.node-config input[placeholder="Enter node name"]').value,
+                type: document.querySelector('.node-config select').value,
+                parentNode: document.querySelectorAll('.node-config select')[1].value,
+                attributes: []
+            };
+
+            // Collect custom attributes
+            document.querySelectorAll('.attribute-item').forEach(item => {
+                const nameInput = item.querySelector('.attribute-name-input');
+                const valueInput = item.querySelector('.attribute-value-input');
+                if (nameInput.value && valueInput.value) {
+                    nodeData.attributes.push({
+                        name: nameInput.value,
+                        value: valueInput.value
+                    });
+                }
+            });
+
+            // Simulate saving (in real app, this would call your API)
+            console.log('Saving node:', nodeData);
+            
+            // Show success feedback
+            const saveBtn = document.querySelector('.save-node-btn');
+            const originalText = saveBtn.textContent;
+            saveBtn.textContent = 'Saved!';
+            saveBtn.style.background = '#28a745';
+            
+            setTimeout(() => {
+                saveBtn.textContent = originalText;
+                saveBtn.style.background = '';
+            }, 1500);
+
+            // In a real app, you would update the D3.js visualization here
+            // For demo purposes, we'll just log it
+            console.log('Would update D3.js visualization with new node');
+        }
+
+        function toggleTheme() {
+            document.body.classList.toggle('dark');
+            const btn = document.querySelector('.theme-toggle');
+            btn.innerHTML = document.body.classList.contains('dark') ? '☀️' : '🌙';
+        }
+
+        // Remove the old interactive effects since we now have selectTool function
+    </script>
+</body>
+</html>
