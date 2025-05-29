@@ -267,22 +267,45 @@
 
         function addAttribute() {
             const attributesList = document.getElementById('attributesList');
-            const attributeId = 'attr_' + Date.now();
-            
+
+            // Create the attribute row
             const attributeDiv = document.createElement('div');
             attributeDiv.className = 'attribute-item';
-            attributeDiv.id = attributeId;
-            
-            attributeDiv.innerHTML = `
-                <div class="attribute-name-row">
-                    <input type="text" class="attribute-name-input" placeholder="Attribute name" />
-                    <button class="remove-attribute-btn" onclick="removeAttribute('${attributeId}')">−</button>
-                </div>
-                <textarea class="attribute-value-input" placeholder="Enter attribute value (can be multiple lines)"></textarea>
-            `;
-            
+
+            // Create the name row
+            const nameRow = document.createElement('div');
+            nameRow.className = 'attribute-name-row';
+
+            // Name input
+            const nameInput = document.createElement('input');
+            nameInput.type = 'text';
+            nameInput.className = 'attribute-name-input';
+            nameInput.placeholder = 'Attribute name';
+
+            // Remove button
+            const removeBtn = document.createElement('button');
+            removeBtn.type = 'button';
+            removeBtn.className = 'remove-attribute-btn';
+            removeBtn.textContent = '−';
+            removeBtn.onclick = function() {
+                attributeDiv.remove();
+            };
+
+            nameRow.appendChild(nameInput);
+            nameRow.appendChild(removeBtn);
+
+            // Value textarea
+            const valueInput = document.createElement('textarea');
+            valueInput.className = 'attribute-value-input';
+            valueInput.placeholder = 'Enter attribute value (can be multiple lines)';
+
+            // Assemble
+            attributeDiv.appendChild(nameRow);
+            attributeDiv.appendChild(valueInput);
+
             attributesList.appendChild(attributeDiv);
         }
+        window.addAttribute = addAttribute;
 
         function removeAttribute(attributeId) {
             const attributeElement = document.getElementById(attributeId);
@@ -290,6 +313,7 @@
                 attributeElement.remove();
             }
         }
+        window.removeAttribute = removeAttribute;
 
         function saveNode() {
             // Collect form data
